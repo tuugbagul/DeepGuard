@@ -1,0 +1,53 @@
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Claude Code
+.claude/
+
+# Roop (external tool with large model files)
+roop/
+
+# Dataset JSON manifests (contain machine-specific paths)
+celeb_pro_6000.json
+roop_dataset.json
+celeb_test.json
+my_dataset.json
+
+# Model weights (too large for GitHub — see README for download)
+*.pth
+*.pt
+*.onnx
+*.h5
+
+# Output folders (generated at runtime)
+gradcam_output/
+demo_gradcam_output/
+demo_output/
+demo_10_output/
+outputs/
+outputs_*/
+real_faces/
+source_faces/
+
+# Reports
+*.docx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/

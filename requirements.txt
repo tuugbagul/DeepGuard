@@ -1,0 +1,22 @@
+# Deep learning
+torch>=2.0.0
+torchvision>=0.15.0
+timm>=0.9.0
+
+# Computer vision
+opencv-python>=4.8.0
+Pillow>=10.0.0
+
+# Data / ML utilities
+numpy>=1.24.0
+scikit-learn>=1.3.0
+tqdm>=4.65.0
+
+# Demo UI
+gradio>=4.0.0
+
+# Visualization & reporting
+python-docx>=1.1.0
+
+# PixelGuard dependency (install separately from PixelGuardM project)
+# No pip package — clone from source and add to sys.path
