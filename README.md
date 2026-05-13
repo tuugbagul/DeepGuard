@@ -1,6 +1,73 @@
-# DeepGuard — Deepfake Yüz Tespit Sistemi
+# DeepGuard
 
-EfficientNet-B4 ve Xception + FFT + Cross-Attention mimarilerini birleştiren **feature-level fusion** modeli ile sahte yüz tespiti.
+DeepGuard, bir yüz fotoğrafının deepfake olup olmadığını tahmin eden bir Gradio demosudur. Model tarafında `EfficientNet-B4` ile `Xception + FFT + Cross-Attention` birleşiminden oluşan bir fusion mimarisi kullanır.
+
+Bu repo artık öncelikle **demo/inference** deneyimine odaklıdır. Eğitim, veri hazırlama ve değerlendirme scriptleri hâlâ repoda durur; ancak onlar ileri seviye/araştırma kullanımı içindir.
+
+## Hızlı Başlangıç
+
+```bash
+git clone https://github.com/tuugbagul/DeepGuard.git
+cd DeepGuard
+
+python -m venv venv
+venv\Scripts\activate
+
+pip install -r requirements.txt
+python demo.py
+```
+
+Windows'ta isterseniz doğrudan şunu da çalıştırabilirsiniz:
+
+```bat
+run_demo.bat
+```
+
+Demo açıldığında tarayıcıda `http://127.0.0.1:7860` adresine gider. Bir yüz fotoğrafı yükleyin, model tahmini ve GradCAM ısı haritasını görün.
+
+## Weight Akışı
+
+Demo, `fusion_finetuned.pth` dosyasını şu sırayla arar:
+
+1. `--weights` ile verdiğiniz özel yol
+2. Repo kökündeki `fusion_finetuned.pth`
+3. `weights/fusion_finetuned.pth`
+4. GitHub Release asset indirimi
+
+Varsayılan release URL şablonu:
+
+```text
+https://github.com/tuugbagul/DeepGuard/releases/latest/download/fusion_finetuned.pth
+```
+
+Eğer release asset henüz yayınlanmadıysa iki kolay seçenek var:
+
+```bash
+python demo.py --weights path/to/fusion_finetuned.pth
+```
+
+veya
+
+```bash
+set DEEPGUARD_WEIGHTS_URL=https://your-direct-file-url/fusion_finetuned.pth
+python demo.py
+```
+
+PowerShell için:
+
+```powershell
+$env:DEEPGUARD_WEIGHTS_URL="https://your-direct-file-url/fusion_finetuned.pth"
+python demo.py
+```
+
+## Sık Kullanılan Komutlar
+
+```bash
+python demo.py
+python demo.py --no-download
+python demo.py --weights weights/fusion_finetuned.pth
+python demo.py --host 0.0.0.0 --port 7860
+```
 
 ## Model Sonuçları
 
@@ -13,108 +80,54 @@ EfficientNet-B4 ve Xception + FFT + Cross-Attention mimarilerini birleştiren **
 
 ## Mimari
 
-```
-Giriş (299×299 RGB)
-    │
-    ├── EfficientNet-B4 → 1792-dim features
-    │
-    └── Xception + FFT + Cross-Attention
-            ├── Xception       → 2048-dim
-            ├── FFT Branch     →  512-dim
-            └── Cross-Attention → 256-dim
-                                = 2304-dim features
-    │
-    concat [1792 + 2304 = 4096-dim]
-    │
-    FC(512) → BN → ReLU → Dropout(0.4)
-    │
-    FC(1) → sigmoid → sahtelik skoru
+```text
+Giriş (299x299 RGB)
+    |
+    |-- EfficientNet-B4 -> 1792-dim features
+    |
+    `-- Xception + FFT + Cross-Attention
+            |-- Xception        -> 2048-dim
+            |-- FFT Branch      ->  512-dim
+            `-- Cross-Attention ->  256-dim
+                                   = 2304-dim features
+
+concat [1792 + 2304 = 4096-dim]
+    -> FC(512) -> BN -> ReLU -> Dropout(0.4)
+    -> FC(1) -> sigmoid -> sahtelik skoru
 ```
 
 ## Veri Setleri
 
-- **FaceForensics++**: Deepfakes, Face2Face, FaceSwap, NeuralTextures + gerçek YouTube videoları
+- **FaceForensics++**: Deepfakes, Face2Face, FaceSwap, NeuralTextures ve gerçek YouTube videoları
 - **Celeb-DF**: Ünlü deepfake videoları
 - **Özel Roop veri seti**: LFW yüzleri üzerinde [Roop](https://github.com/s0md3v/roop) ile üretilmiş sahte + gerçek çiftler
 
-## Kurulum
+## Repo Yapısı
 
-```bash
-git clone https://github.com/<kullanici>/deepguard.git
-cd deepguard
-
-python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # Linux/macOS
-
-pip install -r requirements.txt
-```
-
-## Model Ağırlıkları
-
-Model ağırlıkları repo'ya dahil edilmemiştir (boyut nedeniyle).  
-Aşağıdaki dosyaları indirip repo kök dizinine yerleştirin:
-
-| Dosya | Açıklama |
-|-------|----------|
-| `fusion_finetuned.pth` | Ana fusion modeli (EfficientNet-B4 + PixelGuard) |
-| `efficientnet_finetuned.pth` | Standalone EfficientNet-B4 |
-| `pixelguard_best.pth` | Standalone PixelGuard (Xception+FFT) |
-
-## Demo Çalıştırma
-
-```bash
-python demo.py --weights fusion_finetuned.pth
-# Tarayıcıda açılır: http://localhost:7860
-```
-
-Bir yüz fotoğrafı yükleyin → **Analiz Et** → GradCAM ısı haritası + sahtelik skoru.
-
-## Proje Yapısı
-
-```
-deepguard/
+```text
+DeepGuard/
+├── demo.py               # Ana Gradio demo girişi
+├── weights.py            # Weight çözümleme / indirme yardımcıları
 ├── fusion_model.py       # Fusion model mimarisi
-├── demo.py               # Gradio web arayüzü
-├── demo_compare.py       # 3 modeli karşılaştıran demo
-│
+├── pixelguard_model.py   # PixelGuard kolu
 ├── train/                # Eğitim scriptleri
-│   ├── train.py
-│   ├── train_fusion.py
-│   ├── fine_tune.py
-│   ├── fine_tune_roop.py
-│   ├── finetune_hard.py
-│   └── finetune_real.py
-│
-├── eval/                 # Değerlendirme
-│   ├── evaluate_all.py   # Accuracy / F1 / AUC-ROC karşılaştırması
-│   ├── test_results.py
-│   ├── test_folder.py
-│   └── test_my_dataset.py
-│
-├── data/                 # Veri çekme scriptleri
-│   ├── extractor.py
-│   ├── celeb_extractor_pro.py
-│   ├── roop_dataset_extractor.py
-│   └── ...
-│
-├── visualize/            # Görselleştirme
-│   ├── visualize.py      # GradCAM ısı haritası üretimi
-│   ├── visualize_results.py
-│   ├── prepare_demo_folder.py
-│   └── make_report.py
-│
-├── roop_scripts/         # Roop entegrasyon scriptleri
-│   ├── roop_batch.py
-│   ├── roop_taha.py
-│   └── roop_taha_fast.py
-│
-└── gradcam_output/       # Örnek GradCAM görselleştirmeleri
+├── eval/                 # Değerlendirme scriptleri
+├── data/                 # Veri hazırlama scriptleri
+├── visualize/            # GradCAM ve raporlama araçları
+└── roop_scripts/         # Roop üretim / yardımcı scriptleri
 ```
 
-## GradCAM Örnekleri
+## Araştırma Scriptleri
 
-`gradcam_output/` klasöründe modelin gerçek ve sahte yüzlerde odaklandığı bölgeler görselleştirilmiştir.
+Bu klasörler demo akışının parçası değildir:
+
+- `train/`
+- `eval/`
+- `data/`
+- `visualize/`
+- `roop_scripts/`
+
+Onlar model geliştirme ve deney çalışmaları için tutulur. İlk kurulumda yalnızca `demo.py` ile ilgilenmeniz yeterlidir.
 
 ## Lisans
 
