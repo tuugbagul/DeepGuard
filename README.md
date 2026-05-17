@@ -1,10 +1,10 @@
 # DeepGuard
 
-DeepGuard, bir yüz fotoğrafının deepfake olup olmadığını tahmin eden bir Gradio demosudur. Model tarafında `EfficientNet-B4` ile `Xception + FFT + Cross-Attention` birleşiminden oluşan bir fusion mimarisi kullanır.
+DeepGuard is a Gradio demo that predicts whether a face image is a deepfake. On the model side, it uses a fusion architecture combining `EfficientNet-B4` with `Xception + FFT + Cross-Attention`.
 
-Bu repo artık öncelikle **demo/inference** deneyimine odaklıdır. Eğitim, veri hazırlama ve değerlendirme scriptleri hâlâ repoda durur; ancak onlar ileri seviye/araştırma kullanımı içindir.
+This repo is now primarily focused on the **demo/inference** experience. Training, data preparation, and evaluation scripts are still present but are intended for advanced/research use.
 
-## Hızlı Başlangıç
+## Quick Start
 
 ```bash
 git clone https://github.com/tuugbagul/DeepGuard.git
@@ -17,50 +17,50 @@ pip install -r requirements.txt
 python demo.py
 ```
 
-Windows'ta isterseniz doğrudan şunu da çalıştırabilirsiniz:
+On Windows, you can also run directly:
 
 ```bat
 run_demo.bat
 ```
 
-Demo açıldığında tarayıcıda `http://127.0.0.1:7860` adresine gider. Bir yüz fotoğrafı yükleyin, model tahmini ve GradCAM ısı haritasını görün.
+Once the demo launches, navigate to `http://127.0.0.1:7860` in your browser. Upload a face image to see the model prediction and GradCAM heatmap.
 
-## Weight Akışı
+## Weight Resolution
 
-Demo, `fusion_finetuned.pth` dosyasını şu sırayla arar:
+The demo searches for `fusion_finetuned.pth` in the following order:
 
-1. `--weights` ile verdiğiniz özel yol
-2. Repo kökündeki `fusion_finetuned.pth`
+1. Custom path provided via `--weights`
+2. `fusion_finetuned.pth` in the repo root
 3. `weights/fusion_finetuned.pth`
-4. GitHub Release asset indirimi
+4. GitHub Release asset download
 
-Varsayılan release URL şablonu:
+Default release URL template:
 
 ```text
 https://github.com/tuugbagul/DeepGuard/releases/latest/download/fusion_finetuned.pth
 ```
 
-Eğer release asset henüz yayınlanmadıysa iki kolay seçenek var:
+If the release asset hasn't been published yet, there are two easy options:
 
 ```bash
 python demo.py --weights path/to/fusion_finetuned.pth
 ```
 
-veya
+or
 
 ```bash
 set DEEPGUARD_WEIGHTS_URL=https://your-direct-file-url/fusion_finetuned.pth
 python demo.py
 ```
 
-PowerShell için:
+For PowerShell:
 
 ```powershell
 $env:DEEPGUARD_WEIGHTS_URL="https://your-direct-file-url/fusion_finetuned.pth"
 python demo.py
 ```
 
-## Sık Kullanılan Komutlar
+## Common Commands
 
 ```bash
 python demo.py
@@ -69,19 +69,19 @@ python demo.py --weights weights/fusion_finetuned.pth
 python demo.py --host 0.0.0.0 --port 7860
 ```
 
-## Model Sonuçları
+## Model Results
 
-| Model | Genel Doğruluk | Gerçek | Sahte |
-|-------|---------------|--------|-------|
-| EfficientNet-B4 (FaceForensics++ pretrain) | %59.60 | %30.00 | %89.20 |
-| EfficientNet-B4 (Celeb-DF fine-tune) | %96.80 | %94.40 | %99.20 |
-| EfficientNet-B4 (Roop fine-tune) | %89.38 | %74.36 | %94.21 |
-| **Fusion Modeli** | **%98.12** | **%94.87** | **%99.17** |
+| Model | Overall Accuracy | Real | Fake |
+|-------|-----------------|------|------|
+| EfficientNet-B4 (FaceForensics++ pretrain) | 59.60% | 30.00% | 89.20% |
+| EfficientNet-B4 (Celeb-DF fine-tune) | 96.80% | 94.40% | 99.20% |
+| EfficientNet-B4 (Roop fine-tune) | 89.38% | 74.36% | 94.21% |
+| **Fusion Model** | **98.12%** | **94.87%** | **99.17%** |
 
-## Mimari
+## Architecture
 
 ```text
-Giriş (299x299 RGB)
+Input (299x299 RGB)
     |
     |-- EfficientNet-B4 -> 1792-dim features
     |
@@ -93,33 +93,33 @@ Giriş (299x299 RGB)
 
 concat [1792 + 2304 = 4096-dim]
     -> FC(512) -> BN -> ReLU -> Dropout(0.4)
-    -> FC(1) -> sigmoid -> sahtelik skoru
+    -> FC(1) -> sigmoid -> fakeness score
 ```
 
-## Veri Setleri
+## Datasets
 
-- **FaceForensics++**: Deepfakes, Face2Face, FaceSwap, NeuralTextures ve gerçek YouTube videoları
-- **Celeb-DF**: Ünlü deepfake videoları
-- **Özel Roop veri seti**: LFW yüzleri üzerinde [Roop](https://github.com/s0md3v/roop) ile üretilmiş sahte + gerçek çiftler
+- **FaceForensics++**: Deepfakes, Face2Face, FaceSwap, NeuralTextures, and real YouTube videos
+- **Celeb-DF**: Celebrity deepfake videos
+- **Custom Roop dataset**: Fake + real pairs generated with [Roop](https://github.com/s0md3v/roop) on LFW faces
 
-## Repo Yapısı
+## Repo Structure
 
 ```text
 DeepGuard/
-├── demo.py               # Ana Gradio demo girişi
-├── weights.py            # Weight çözümleme / indirme yardımcıları
-├── fusion_model.py       # Fusion model mimarisi
-├── pixelguard_model.py   # PixelGuard kolu
-├── train/                # Eğitim scriptleri
-├── eval/                 # Değerlendirme scriptleri
-├── data/                 # Veri hazırlama scriptleri
-├── visualize/            # GradCAM ve raporlama araçları
-└── roop_scripts/         # Roop üretim / yardımcı scriptleri
+├── demo.py               # Main Gradio demo entry point
+├── weights.py            # Weight resolution / download helpers
+├── fusion_model.py       # Fusion model architecture
+├── pixelguard_model.py   # PixelGuard branch
+├── train/                # Training scripts
+├── eval/                 # Evaluation scripts
+├── data/                 # Data preparation scripts
+├── visualize/            # GradCAM and reporting tools
+└── roop_scripts/         # Roop generation / utility scripts
 ```
 
-## Araştırma Scriptleri
+## Research Scripts
 
-Bu klasörler demo akışının parçası değildir:
+These folders are not part of the demo flow:
 
 - `train/`
 - `eval/`
@@ -127,8 +127,8 @@ Bu klasörler demo akışının parçası değildir:
 - `visualize/`
 - `roop_scripts/`
 
-Onlar model geliştirme ve deney çalışmaları için tutulur. İlk kurulumda yalnızca `demo.py` ile ilgilenmeniz yeterlidir.
+They are kept for model development and experimentation. For initial setup, you only need to care about `demo.py`.
 
-## Lisans
+## License
 
-Bu proje akademik amaçlıdır.
+This project is for academic purposes.
